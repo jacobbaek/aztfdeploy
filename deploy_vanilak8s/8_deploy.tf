@@ -62,26 +62,35 @@ locals {
 #   content  = local.kubespray_hosts
 # }
 
-resource "remote_file" "hosts_file" {
-  conn {
-    host     = azurerm_public_ip.deploy_public_ip.ip_address
-    port     = 22
-    user     = "azureuser"
-    private_key = file(var.ssh_private_key)
-  }
+# resource "file" "hosts_file" {
+#   conn {
+#     host     = azurerm_public_ip.deploy_public_ip.ip_address
+#     type     = ssh
+#     user     = "azureuser"
+#     private_key = file(var.ssh_private_key)
+#     timeout  = "10s"
+#   }
 
-  path        = "/home/azureuser/hosts.ini"
-  content     = local.kubespray_hosts
-  permissions = "0644"
-}
+#   destination = "/home/azureuser/hosts.ini"
+#   content     = local.kubespray_hosts
+# }
 
 resource "null_resource" "provision_deploy" {
   connection {
     host     = azurerm_public_ip.deploy_public_ip.ip_address
     type     = "ssh"
     user     = "azureuser"
-    private_key = "${file(var.ssh_private_key)}"
-    timeout = "10s"
+    private_key = file(var.ssh_private_key)
+  }
+
+  provisioner "file" {
+    content     = file(var.ssh_private_key)
+    destination = "/home/azureuser/.ssh/id_rsa"
+  }
+
+  provisioner "file" {
+    destination = "/home/azureuser/hosts.ini"
+    content     = local.kubespray_hosts
   }
 
   provisioner "file" {
