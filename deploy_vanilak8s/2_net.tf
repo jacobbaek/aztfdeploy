@@ -45,6 +45,14 @@ resource "azurerm_public_ip" "deploy_public_ip" {
   allocation_method   = "Dynamic"
 }
 
+resource "azurerm_public_ip" "lb_public_ip" {
+  name                = format("%s-lb-pip", var.res_prefix)
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
 # Create network interface
 resource "azurerm_network_interface" "node_nic" {
   count               = var.node_count
@@ -85,4 +93,19 @@ resource "azurerm_network_interface" "deploy_nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.deploy_public_ip.id
   }
+}
+
+# associate lb
+resource "azurerm_network_interface_backend_address_pool_association" "cpnode_nic_lb_pool" {
+  count                   = var.cpnode_count
+  network_interface_id    = azurerm_network_interface.cpnode_nic[count.index].id
+  ip_configuration_name   = "cpnodeipconfig${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_cpnode_pool.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "node_nic_lb_pool" {
+  count                   = var.node_count
+  network_interface_id    = azurerm_network_interface.node_nic[count.index].id
+  ip_configuration_name   = "nodeipconfig${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_node_pool.id
 }
