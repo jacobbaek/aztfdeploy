@@ -41,3 +41,18 @@ resource "azurerm_lb_rule" "lb_api_rule" {
   probe_id                       = azurerm_lb_probe.lb_api_probe.id
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_cpnode_pool.id]
 }
+
+# associate lb
+resource "azurerm_network_interface_backend_address_pool_association" "cpnode_nic_lb_pool" {
+  count                   = var.cpnode_count
+  network_interface_id    = azurerm_network_interface.cpnode_nic[count.index].id
+  ip_configuration_name   = format("%s-cpnode-nicconf-%s", var.res_prefix, count.index)
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_cpnode_pool.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "node_nic_lb_pool" {
+  count                   = var.node_count
+  network_interface_id    = azurerm_network_interface.node_nic[count.index].id
+  ip_configuration_name   = format("%s-node-nicconf-%s", var.res_prefix, count.index)
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_node_pool.id
+}
