@@ -57,4 +57,6 @@ resource "null_resource" "provision_deploy" {
       "/tmp/script.sh args",
     ]
   }
+
+  depends_on = [azurerm_public_ip.deploy_public_ip]
 }
