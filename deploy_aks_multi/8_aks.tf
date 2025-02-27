@@ -1,12 +1,12 @@
 # dev
 resource "azurerm_kubernetes_cluster" "k8s-dev" {
   location            = azurerm_resource_group.rg-dev.location
-  name                = format("%s-new-cluster", var.res_prefix)
+  name                = format("%s-dev-cluster", var.res_prefix)
   resource_group_name = azurerm_resource_group.rg-dev.name
-  dns_prefix          = format("%s-domain", var.res_prefix)
-  node_resource_group = format("%s-noderg", var.res_prefix)
+  dns_prefix          = format("%s-dev-domain", var.res_prefix)
+  node_resource_group = format("%s-dev-noderg", var.res_prefix)
   tags                = {
-    Environment = "Development"
+    Environment = "Dev"
   }
 
   kubernetes_version = var.aks_version
