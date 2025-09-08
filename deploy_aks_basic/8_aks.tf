@@ -3,6 +3,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   name                = format("%s-cluster", var.res_prefix)
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = format("%s-domain", var.res_prefix)
+  node_resource_group = format("%s-noderg", var.res_prefix)
   tags                = {
     Environment = "Development"
   }

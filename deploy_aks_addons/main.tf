@@ -42,6 +42,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     name       = "agentpool"
     vm_size    = "Standard_D2_v2"
     node_count = var.agent_count
+    #orchestrator_version = "1.29.0"
     linux_os_config {
        transparent_huge_page_enabled = "madvise"
        transparent_huge_page_defrag = "defer+madvise"

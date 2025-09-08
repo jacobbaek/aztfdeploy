@@ -1,5 +1,5 @@
 variable "agent_count" {
-  default = 2
+  default = 3
 }
 
 # Refer to https://azure.microsoft.com/global-infrastructure/services/?products=monitor for available Log Analytics regions.

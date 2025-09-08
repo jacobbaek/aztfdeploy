@@ -3,26 +3,6 @@ resource "azurerm_resource_group" "rg" {
   name     = format("%s-rg", var.res_prefix)
 }
 
-resource "azurerm_log_analytics_workspace" "logws" {
-  location            = var.log_workspace_location
-  name                = format("%s-ws", var.res_prefix)
-  resource_group_name = azurerm_resource_group.rg.name
-  sku                 = var.log_workspace_sku
-}
-
-resource "azurerm_log_analytics_solution" "logsl" {
-  location              = azurerm_log_analytics_workspace.logws.location
-  resource_group_name   = azurerm_resource_group.rg.name
-  solution_name         = "ContainerInsights"
-  workspace_name        = azurerm_log_analytics_workspace.logws.name
-  workspace_resource_id = azurerm_log_analytics_workspace.logws.id
-
-  plan {
-    product   = "OMSGallery/ContainerInsights"
-    publisher = "Microsoft"
-  }
-}
-
 resource "azurerm_kubernetes_cluster" "k8s" {
   location            = azurerm_resource_group.rg.location
   name                = format("%s-cluster", var.res_prefix)
@@ -40,13 +20,11 @@ resource "azurerm_kubernetes_cluster" "k8s" {
 
   default_node_pool {
     name       = "agentpool"
-    vm_size    = "Standard_D2_v2"
+    vm_size    = "Standard_E4_v3"
     node_count = var.agent_count
-    #orchestrator_version = "1.29.0"
     linux_os_config {
        transparent_huge_page_enabled = "madvise"
        transparent_huge_page_defrag = "defer+madvise"
-       #swap_file_size_mb = "1500"
        sysctl_config {
          #netCoreSomaxconn = "163849"
          net_core_somaxconn = "163849"
@@ -74,7 +52,7 @@ resource "azurerm_kubernetes_cluster_extension" "container_storage" {
   extension_type = "microsoft.azurecontainerstorage"
   configuration_settings = {
     "enable-azure-container-storage" : "ephemeralDisk",
-    "storage-pool-option" : "NVMe",
+    "storage-pool-option" : "Temp",
     "azure-container-storage-nodepools" : "storagepool",
     "performanceTier" : "Standard"
   }
