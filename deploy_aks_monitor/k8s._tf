@@ -1,0 +1,42 @@
+resource "kubernetes_config_map_v1" "container_azm_ms_agentconfig" {
+  metadata {
+    name      = "container-azm-ms-agentconfig"
+    namespace = "kube-system"
+    labels = {
+      "addon" = "azuremonitor-containers"
+    }
+  }
+
+  # 원본 YAML의 핵심 데이터 키를 Terraform data로 구성
+  # (주요 설정만 포함; 필요 시 확장 가능)
+  data = {
+    "schema-version"      = "v1"
+    "config-version"      = "ver1"
+
+    # TOML 본문을 문자열로 전달
+    "log-data-collection-settings" = <<-EOT
+      [log_collection_settings]
+
+      [log_collection_settings.stdout]
+      enabled = true
+      # kube-system 제외를 풀고 모든 네임스페이스 로그를 수집하려면 빈 배열로
+      exclude_namespaces = []
+
+      [log_collection_settings.stderr]
+      enabled = true
+      exclude_namespaces = []
+
+      [log_collection_settings.env_var]
+      enabled = true
+
+      # (선택) 컨테이너 로그 메타데이터 부가
+      [log_collection_settings.enrich_container_logs]
+      enabled = true
+
+      # (선택) 모든 K8s 이벤트 수집
+      [log_collection_settings.collect_all_kube_events]
+      enabled = false
+    EOT
+  }
+}
+

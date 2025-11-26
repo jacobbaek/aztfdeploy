@@ -1,57 +1,3 @@
-# -----------------------------
-# 0) 공통: 리소스 그룹
-# -----------------------------
-resource "azurerm_resource_group" "rg" {
-  name     = "${var.prefix}-rg"
-  location = var.location
-}
-
-# -----------------------------
-# 1) Log Analytics Workspace
-#    - Container Insights 로그 수집 대상
-# -----------------------------
-resource "azurerm_log_analytics_workspace" "law" {
-  name                = "${var.prefix}-law"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  sku                = "PerGB2018"
-  retention_in_days  = 30
-}
-
-# -----------------------------
-# 2) AKS 클러스터
-#    - SystemAssigned MI
-#    - OMS 에이전트 애드온 활성화 (AMA/ama-logs pod 배포)
-# -----------------------------
-resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "${var.prefix}-aks"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  dns_prefix          = "${var.prefix}-dns"
-
-  default_node_pool {
-    name                = "system"
-    vm_size             = "Standard_DS2_v2"
-    node_count          = 1
-    orchestrator_version = var.kubernetes_version # (선택) 빈 값이면 최신 안정판
-  }
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  # Container Insights 활성화 - ama-logs pod 배포
-  oms_agent {
-    log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
-    msi_auth_for_monitoring_enabled = true
-  }
-}
-
-# -----------------------------
-# 3) Data Collection Endpoint (DCE)
-#    - AMA가 데이터를 보낼 엔드포인트
-# -----------------------------
 resource "azurerm_monitor_data_collection_endpoint" "dce" {
   name                = "${var.prefix}-dce"
   location            = azurerm_resource_group.rg.location
@@ -63,8 +9,6 @@ resource "azurerm_monitor_data_collection_endpoint" "dce" {
   }
 }
 
-
-# 4) Data Collection Rule (Container Insights용) - 수정 버전
 resource "azurerm_monitor_data_collection_rule" "dcr_ci" {
   name                        = "MSCI-${azurerm_resource_group.rg.location}-${azurerm_kubernetes_cluster.aks.name}"
   location                    = azurerm_resource_group.rg.location
@@ -141,18 +85,9 @@ resource "azurerm_monitor_data_collection_rule" "dcr_ci" {
   }
 }
 
-# -----------------------------
-# 5) DCR Association: DCR ↔ AKS 연결
-#    - 이 연결이 되어야 클러스터에 AMA(컨테이너)가 배포·적용됩니다
-# -----------------------------
 resource "azurerm_monitor_data_collection_rule_association" "dcr_assoc_ci" {
   name                    = "${var.prefix}-dcrassoc-ci"
   target_resource_id      = azurerm_kubernetes_cluster.aks.id
   data_collection_rule_id = azurerm_monitor_data_collection_rule.dcr_ci.id
   description             = "Attach Container Insights DCR to AKS"
 }
-
-# (선택) 제어판(control plane) 로그, Managed Prometheus도 함께 원하시면
-# 별도 DCR/DCE/Association 구성을 병행합니다. AKS 모니터링 온보딩 시
-# 여러 기능(프라메테우스/컨테이너 로그/제어판 로그)이 서로 다른 워크스페이스/규칙으로
-# 분리될 수 있습니다.[1](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-enable)
